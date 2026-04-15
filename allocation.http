@@ -1,0 +1,97 @@
+### Base URL
+@baseUrl = http://localhost:8080
+
+
+### ── Allocations ──────────────────────────────────────────────
+
+### Get allocation by ID  (replace with actual ID from response above)
+@allocationId = 5c504d47-4e6d-4a5b-aa50-6d78d8ef7f02
+GET {{baseUrl}}/allocations/{{allocationId}}
+
+### Trigger allocation — happy path testing
+POST {{baseUrl}}/allocations
+Content-Type: application/json
+
+{
+  "employeeId": "00000000-0000-0000-0000-000000000001",
+  "policy": [
+    {
+      "equipmentType": "main_computer",
+      "minConditionScore": 0.7,
+      "preferredBrand": "Dell"
+    },
+    {
+      "equipmentType": "monitor",
+      "minConditionScore": 0.9
+    },
+    {
+      "equipmentType": "monitor",
+      "minConditionScore": 0.85
+    },
+    {
+      "equipmentType": "keyboard"
+    },
+    {
+      "equipmentType": "mouse"
+    }
+  ]
+}
+
+### Trigger allocation — negative scenario test
+### Just trigger it few times to exhaust monitors with score 1. Then algorithm is able to find solution
+POST {{baseUrl}}/allocations
+Content-Type: application/json
+
+{
+  "employeeId": "00000000-0000-0000-0000-000000000001",
+  "policy": [
+    {
+      "equipmentType": "monitor",
+      "minConditionScore": 1,
+      "preferredBrand": "Dell"
+    },
+    {
+      "equipmentType": "main_computer",
+      "minConditionScore": 1,
+      "preferredBrand": "Samsung"
+    },
+    {
+      "equipmentType": "main_computer",
+      "minConditionScore": 1,
+      "preferredBrand": "LG"
+    }
+  ]
+}
+
+### ── Equipment ──────────────────────────────────────────────
+
+### List all equipment
+GET {{baseUrl}}/equipments
+
+### List only available equipment
+GET {{baseUrl}}/equipments?state=available
+
+### List reserved equipment
+GET {{baseUrl}}/equipments?state=reserved
+
+
+### Create allocation — laptop only, strict condition requirement
+POST {{baseUrl}}/allocations
+Content-Type: application/json
+
+{
+  "employeeId": "00000000-0000-0000-0000-000000000002",
+  "policy": [
+    {
+      "equipmentType": "main_computer",
+      "minConditionScore": 0.95
+    }
+  ]
+}
+
+
+### Confirm allocation (transitions reserved → assigned)
+POST {{baseUrl}}/allocations/{{allocationId}}/confirm
+
+### Cancel allocation (releases reserved → available)
+POST {{baseUrl}}/allocations/{{allocationId}}/cancel

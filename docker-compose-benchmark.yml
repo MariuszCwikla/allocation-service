@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: acme-benchmark-postgres
+    environment:
+      POSTGRES_DB: acme
+      POSTGRES_USER: acme
+      POSTGRES_PASSWORD: acme1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_benchmark_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acme -d acme"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  allocationservice:
+    image: allocationservice:latest
+    container_name: acme-allocationservice
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/acme
+      SPRING_DATASOURCE_USERNAME: acme
+      SPRING_DATASOURCE_PASSWORD: acme1234
+      SPRING_LIQUIBASE_CONTEXTS: default,seed
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_benchmark_data:

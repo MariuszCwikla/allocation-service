@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0001-initial-schema
+      author: mariusz
+      changes:
+        - sqlFile:
+            path: sql/0001-initial-schema.sql
+  - changeSet:
+      id: 0002-seed-equipment
+      author: mariusz
+      context: seed
+      changes:
+        - sqlFile:
+            path: sql/0002-seed-equipment.sql

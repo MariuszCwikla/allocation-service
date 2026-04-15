@@ -1,0 +1,21 @@
+= 0002. Dynamic limit in bipartite matching solver
+
+== Context
+
+The solver needs a limit for candidate expansion during matching.
+
+== Decision
+
+The limit is calculated dynamically as the number of policy items multiplied by a constant.
+Initially, the constant is set to `20`.
+
+== Rationale
+
+This keeps the MVP simple while making the limit scale with the size of the problem
+instead of relying on one global constant.
+
+== Alternatives
+
+* Time-based limit
+
+== Consequences

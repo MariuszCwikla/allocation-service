@@ -1,0 +1,137 @@
+= Allocation Benchmark
+
+Benchmark is implemented using k6 tool - `benchmark/allocation.js`.
+
+It runs a benchmark: user requests 1 laptop and 1 monitor and measures time to allocate user's request.
+
+== Prerequisites
+
+1. Build `allocationservice` docker image and run service+postgres using docker compose.
+2. Observe logs from `allocationservice` and wait for service to be up
+3. Then run k6 benchmark
+
+You can use just recipes:
+
+----
+just build-docker
+just benchmark-setup
+----
+
+When Spring Boot application is up, simply Ctrl-C and run:
+
+----
+just benchmark
+----
+
+(or run in second terminal)
+
+== Results
+
+Output from k6:
+
+* 1 Virtual user sending 50 allocation requests.
+
+----
+just benchmark                                                                                                                                                 ...
+k6 run benchmark/allocation.js
+
+         /\      Grafana   /‾‾/
+    /\  /  \     |\  __   /  /
+   /  \/    \    | |/ /  /   ‾‾\
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/
+
+
+     execution: local
+        script: benchmark/allocation.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 1 max VUs, 10m30s max duration (incl. graceful stop):
+              * default: 50 iterations shared among 1 VUs (maxDuration: 10m0s, gracefulStop: 30s)
+
+
+
+  █ TOTAL RESULTS
+
+    checks_total.......: 50      11.643339/s
+    checks_succeeded...: 100.00% 50 out of 50
+    checks_failed......: 0.00%   0 out of 50
+
+    ✓ POST /allocations → 202
+
+    CUSTOM
+    allocation_e2e_ms..............: min=63ms    med=72.5ms p(90)=131.9ms  p(95)=170.79ms p(99)=209.31ms max=225ms
+
+    HTTP
+    http_req_duration..............: min=4.58ms  med=9.4ms  p(90)=30ms     p(95)=55.19ms  p(99)=118.4ms  max=158.76ms
+      { expected_response:true }...: min=4.58ms  med=9.4ms  p(90)=30ms     p(95)=55.19ms  p(99)=118.4ms  max=158.76ms
+    http_req_failed................: 0.00% 0 out of 100
+    http_reqs......................: 100   23.286677/s
+
+    EXECUTION
+    iteration_duration.............: min=62.84ms med=72.7ms p(90)=131.93ms p(95)=170.53ms p(99)=209.4ms  max=225.31ms
+    iterations.....................: 50    11.643339/s
+    vus............................: 1     min=1        max=1
+    vus_max........................: 1     min=1        max=1
+
+    NETWORK
+    data_received..................: 39 kB 9.2 kB/s
+    data_sent......................: 19 kB 4.4 kB/s
+----
+
+
+* 5 Virtual users sending 50 allocation requests.
+
+----
+just benchmark                                                     ...
+k6 run benchmark/allocation.js
+
+         /\      Grafana   /‾‾/
+    /\  /  \     |\  __   /  /
+   /  \/    \    | |/ /  /   ‾‾\
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/
+
+
+     execution: local
+        script: benchmark/allocation.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 5 max VUs, 10m30s max duration (incl. graceful stop):
+              * default: 50 iterations shared among 5 VUs (maxDuration: 10m0s, gracefulStop: 30s)
+
+
+
+  █ TOTAL RESULTS
+
+    checks_total.......: 50      13.655709/s
+    checks_succeeded...: 100.00% 50 out of 50
+    checks_failed......: 0.00%   0 out of 50
+
+    ✓ POST /allocations → 202
+
+    CUSTOM
+    allocation_e2e_ms..............: min=96ms    med=254ms    p(90)=531.5ms  p(95)=1.28s   p(99)=1.41s    max=1.43s
+
+    HTTP
+    http_req_duration..............: min=9.31ms  med=27.32ms  p(90)=48.63ms  p(95)=72.83ms p(99)=846.14ms max=846.14ms
+      { expected_response:true }...: min=9.31ms  med=27.32ms  p(90)=48.63ms  p(95)=72.83ms p(99)=846.14ms max=846.14ms
+    http_req_failed................: 0.00% 0 out of 200
+    http_reqs......................: 200   54.622837/s
+
+    EXECUTION
+    iteration_duration.............: min=96.03ms med=253.89ms p(90)=532.14ms p(95)=1.28s   p(99)=1.41s    max=1.43s
+    iterations.....................: 50    13.655709/s
+    vus............................: 5     min=5        max=5
+    vus_max........................: 5     min=5        max=5
+
+    NETWORK
+    data_received..................: 55 kB 15 kB/s
+    data_sent......................: 31 kB 8.4 kB/s
+
+
+
+
+running (00m03.7s), 0/5 VUs, 50 complete and 0 interrupted iterations
+default ✓ [======================================] 5 VUs  00m03.7s/10m0s  50/50 shared iters
+----

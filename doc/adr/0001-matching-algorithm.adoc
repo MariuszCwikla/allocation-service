@@ -1,0 +1,23 @@
+= 0001. Matching algorithm
+
+== Context
+
+The service must assign available equipment to policy slots satisfying hard constraints (type, condition score) and soft preferences (brand).
+A naive per-slot greedy fails when the same item is the best candidate for multiple slots simultaneously.
+
+== Decision
+
+Initial version of the algorithm will be implemented using Bipartite Matching.
+
+== Rationale
+
+Bipartite Matching is fairly easy to implement and test
+
+== Alternatives
+
+* Hungarian algorithm - more complex than Bipartite Matching
+* min-cost flow - more complex than Bipartite Matching
+
+== Consequences
+
+Chosen algorithm does not solve all requirements well. Alternatives shall be researched in the future.

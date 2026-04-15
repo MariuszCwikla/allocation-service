@@ -1,0 +1,36 @@
+graph {
+    rankdir=LR
+    splines=line
+    node [shape=box style=filled fontname="Helvetica" fontsize=11]
+    edge [fontsize=9]
+
+    subgraph cluster_v {
+        label="Policy Slots"
+        style=filled fillcolor=aliceblue
+        v1 [label="laptop\n(prefer Apple)"  fillcolor=aliceblue]
+        v2 [label="monitor\n(score ≥ 0.8)"  fillcolor=aliceblue]
+        v3 [label="monitor\n(score ≥ 0.9)"  fillcolor=aliceblue]
+    }
+
+    subgraph cluster_u {
+        label="Equipment Candidates"
+        style=filled fillcolor=honeydew
+        u1 [label="Apple MacBook\nscore=0.9"   fillcolor=honeydew]
+        u2 [label="Dell Laptop\nscore=0.9"     fillcolor=honeydew]
+        u3 [label="Dell Monitor A\nscore=0.9"  fillcolor=honeydew]
+        u4 [label="Dell Monitor B\nscore=0.85" fillcolor=honeydew]
+        u5 [label="Dell Monitor C\nscore=0.8"  fillcolor=honeydew]
+    }
+
+    // matched — FULL_MATCH (solid, bold)
+    v1 -- u1 [penwidth=2 color=blue label="FULL_MATCH"]
+
+    // matched — PARTIAL_MATCH (dashed, bold)
+    v3 -- u3 [penwidth=2 color=blue style=dashed label="PARTIAL_MATCH"]
+    v2 -- u4 [penwidth=2 color=blue style=dashed label="PARTIAL_MATCH"]
+
+    // candidate edges not selected
+    v1 -- u2 [color=gray style=dashed]
+    v2 -- u3 [color=gray style=dashed]
+    v2 -- u5 [color=gray style=dashed]
+}

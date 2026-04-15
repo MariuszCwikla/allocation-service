@@ -1,10 +1,10 @@
-package com.makeit.allocationservice;
+package com.acme.allocationservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class TequipyTaskApplicationTests {
+public class AcmeTaskApplicationTests {
 
     @Test
     void contextLoads() {

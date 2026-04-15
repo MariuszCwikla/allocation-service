@@ -1,0 +1,172 @@
+:toc: left
+:toc-title: Contents
+:toclevels: 3
+:icons: font
+
+= Equipment Allocation Service
+
+A Spring Boot service that manages an IT equipment inventory and handles allocation requests — assigning the best available equipment to employees based on role-based policies.
+
+== Running the Service
+
+=== Prerequisites
+
+* Java 21
+* Docker & Docker Compose
+* https://just.systems[just] (task runner)
+
+=== Quick Start
+
+[source,bash]
+----
+# start PostgreSQL
+just up
+# start the app
+just run
+# run an end-to-end demo: creates an allocation request and polls until a terminal state is reached
+just demo
+----
+
+The service starts on port `8080`.
+
+=== Build & Test
+
+[source,bash]
+----
+# Build
+./mvnw clean package
+
+# Run all tests
+./mvnw test
+
+# Run a specific test class
+./mvnw test -Dtest=BipartiteMatchingAlgorithmTest
+----
+
+=== Benchmark
+
+See link:BENCHMARK.adoc[BENCHMARK.adoc] for instructions and results.
+
+== Architecture
+
+=== A pragmatic approach to Domain-Driven Design
+
+This project applies Domain-Driven Design selectively, focusing on concepts that provide clear value rather than enforcing a rigid structure.
+
+Key elements include:
+
+* Repositories – implemented via Spring Data
+* Application Services – a single, non-trivial use case (equipment allocation) is implemented as an application service
+* Aggregates – e.g. `AllocationRequest`
+* Specifications – e.g. `EquipmentSpecification`
+* Allocation Solver – a replaceable strategy for allocation algorithms (enabling alternative implementations or A/B testing)
+
+The design intentionally avoids over-engineering:
+
+* Some entities (e.g. `Equipment`) remain anemic due to limited domain logic
+* The service layer is applied selectively – controllers may directly use repositories in simple cases
+
+This keeps the model simple while allowing it to evolve with growing domain complexity.
+
+=== Error Handling
+
+Errors are returned as https://www.rfc-editor.org/rfc/rfc9457[RFC 9457 Problem Details]. HTTP status conventions:
+
+* `400` — domain rule violation (e.g. invalid state transition)
+* `404` — requested resource does not exist
+* `500` — unexpected error; no internal details exposed
+
+=== Database and migration
+
+Service uses Postgres database and Liquibase for database migrations.
+
+Script 0002 intentionally is not executed by default, but with a dedicated liquibase context:
+
+* script 0001 (schema) executes by default when tests are executed or when application is started
+* script 0002 (seed for testing/benchmarking) is attached to `seed` context:
+** seed context is executed automatically when running benchmarks
+** `just run` also runs seed
+** in other scenarios, use `-Dspring.liquibase.contexts=seed` arg
+
+=== Architectural Decision Records
+
+See `doc/adr/` directory.
+
+== Equipment allocation
+
+`POST /allocations` returns `202 Accepted` immediately and triggers equipment allocation in background.
+
+For simplicity, `@Async` is used as a stand-in. In a real project this would be replaced by Kafka or another broker.
+
+Concurrency is handled with optimistic locking (`@Version` on both `Equipment` and `AllocationRequest`). When two concurrent requests compete for the same equipment, the loser retries up to 3 times with exponential back-off (100 ms base, ×2 multiplier).
+
+=== Create Allocation Request Demo
+
+Use `just demo` is a simple recipe that issues curl requests
+
+[source,bash]
+----
+curl -X POST http://localhost:8080/allocations \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "employeeId": "550e8400-e29b-41d4-a716-446655440000",
+    "policy": [
+      {
+        "equipmentType": "main_computer",
+        "minConditionScore": 0.8,
+        "preferredBrand": "Apple"
+      },
+      { "equipmentType": "monitor" },
+      { "equipmentType": "monitor" }
+    ]
+  }'
+----
+
+Returns `202 Accepted` immediately. Poll `GET /allocations/\{id}` to check the result.
+
+=== Key Endpoints
+
+API is not documented with Swagger/OpenAPI (see <<known-limitations>>). The main endpoints are:
+
+* `POST /allocations` — create an allocation request
+* `GET /allocations/\{id}` — poll allocation status
+* `POST /allocations/\{id}/confirm` — confirm allocation (`reserved → assigned`)
+* `POST /allocations/\{id}/cancel` — cancel allocation (`reserved → available`)
+* `GET /equipments` — list available equipment
+* `POST /equipments` — register new equipment
+
+[[known-limitations]]
+== Known Limitations
+
+[cols="1,3", options="header"]
+|===
+| Area | Note
+
+| Soft preference: recency
+| `purchase_date` is stored but not used in candidate ranking. See link:ALGORITHM.adoc#ranking-algorithm[Candidate Ranking] in ALGORITHM.adoc for a proposed improvement.
+
+| Soft preference: global optimality
+| The matching may not find the globally best assignment when multiple valid matchings exist — see link:ALGORITHM.adoc#non-optimal-example[Non-optimal Soft Preference Example] in ALGORITHM.adoc.
+
+| Kafka / real message broker
+| `@Async` is used as a stand-in. Wiring a real broker is the natural next step.
+
+| Authorization
+| Out of scope per the task description.
+
+| Metrics
+| No Prometheus/Micrometer integration. Would be added for a production deployment.
+
+| API documentation
+| No Swagger/OpenAPI. Architecture decisions are captured in ADR files instead.
+|===
+
+
+== Generate PDF docs
+
+[source,bash]
+----
+just pdf
+----
+
+Requires `asciidoctor`, `asciidoctor-pdf`, `asciidoctor-diagram`
