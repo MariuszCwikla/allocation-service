@@ -1,20 +1,25 @@
 package com.acme.allocationservice.controller;
 
 import com.acme.allocationservice.dto.CreateAllocationRequest;
+import com.acme.allocationservice.dto.CreateAllocationResponse;
 import com.acme.allocationservice.fixture.EquipmentFixtures;
 import com.acme.allocationservice.fixture.PolicyItemRequestFixtures;
 import com.acme.allocationservice.model.AllocationRequestState;
 import com.acme.allocationservice.model.EquipmentType;
+import com.acme.allocationservice.repository.AllocationRequestRepository;
 import com.acme.allocationservice.repository.EquipmentRepository;
 import com.acme.allocationservice.service.AllocationService;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +36,7 @@ class AllocationControllerTest {
     @Autowired ObjectMapper objectMapper;
     @Autowired EquipmentRepository equipmentRepository;
     @Autowired AllocationService allocationService;
+    @Autowired AllocationRequestRepository allocationRequestRepository;
 
     @Test
     void createAllocation_returns202WithId() throws Exception {
@@ -38,11 +44,21 @@ class AllocationControllerTest {
         request.setEmployeeId(UUID.randomUUID());
         request.setPolicy(List.of(PolicyItemRequestFixtures.policyItem(EquipmentType.main_computer)));
 
-        mockMvc.perform(post("/allocations")
+        MvcResult result = mockMvc.perform(post("/allocations")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isAccepted())
-            .andExpect(jsonPath("$.allocationId").isNotEmpty());
+            .andExpect(jsonPath("$.allocationId").isNotEmpty())
+            .andReturn();
+
+        UUID allocationId = objectMapper.readValue(
+            result.getResponse().getContentAsString(), CreateAllocationResponse.class).getAllocationId();
+
+        Awaitility.await()
+            .atMost(Duration.ofSeconds(10))
+            .until(() -> allocationRequestRepository.findById(allocationId)
+                .map(a -> a.getState() != AllocationRequestState.pending)
+                .orElse(false));
     }
 
     @Test
